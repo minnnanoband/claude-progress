@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Claude進捗</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Claude進捗">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1f1d1a">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<style>
+:root{--bg:#f6f3ee;--card:#fff;--ink:#22201c;--sub:#6e6a63;--line:#e6e0d6;--track:#ece6dc;
+  --acc:#c96442;--acc2:#f3ddd3;--ask:#2f6fd6;--ask2:#dde8fb;--ok:#3b8a5a;--ok2:#dcefe3;--bad:#c2372f;--bad2:#f6dcda}
+@media (prefers-color-scheme:dark){:root{--bg:#1f1d1a;--card:#2a2824;--ink:#f1ede6;--sub:#a59f95;--line:#3a3732;
+  --track:#3a3732;--acc2:#4a3027;--ask:#7fa8f0;--ask2:#25344d;--ok:#6cc08d;--ok2:#22382b;--bad:#ef7d75;--bad2:#4a2725}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+  padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 28px);-webkit-text-size-adjust:100%}
+main{max-width:560px;margin:0 auto;overflow-wrap:anywhere}
+header{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+header h1{font-size:21px;margin:0;flex:1}
+.meta{font-size:12px;color:var(--sub);margin:0 0 14px}
+.meta.stale{color:var(--bad)}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 12px;cursor:pointer}
+button:active{transform:scale(.98)}
+button.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button.askbtn{background:var(--ask);border-color:var(--ask);color:#fff;font-weight:600}
+button:disabled{opacity:.5}
+h2{font-size:13px;color:var(--sub);font-weight:600;margin:20px 2px 8px;letter-spacing:.04em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.q{border:2px solid var(--ask);}
+.q .who{font-size:12px;color:var(--ask);font-weight:600}
+.q .title{font-size:17px;font-weight:700;margin:2px 0 6px;color:var(--ask)}
+.body{white-space:pre-wrap;word-break:break-word;font-size:14px;color:var(--ink);margin:0 0 10px}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.opts button{border-color:var(--ask);color:var(--ask);background:var(--ask2);font-weight:600}
+textarea{width:100%;font:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:var(--bg);color:var(--ink);resize:vertical;min-height:44px}
+.row{display:flex;gap:8px;align-items:flex-end;margin-top:8px}
+.row textarea{flex:1;min-width:0}
+.sent{font-size:13px;color:var(--ok);background:var(--ok2);border-radius:8px;padding:6px 10px;margin-top:8px;white-space:pre-wrap}
+.job .top{display:flex;align-items:center;gap:8px}
+.job .name{font-weight:700;font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.chip{font-size:11px;padding:2px 8px;border-radius:99px;white-space:nowrap;font-weight:600}
+.s-run{background:var(--acc2);color:var(--acc)}.s-ask{background:var(--ask2);color:var(--ask)}
+.s-done{background:var(--ok2);color:var(--ok)}.s-fail{background:var(--bad2);color:var(--bad)}
+.kind{font-size:12px;color:var(--sub)}
+.bar{height:8px;border-radius:99px;background:var(--track);overflow:hidden;margin:10px 0 6px}
+.bar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width .4s}
+.s-done .bar i,.job.done .bar i{background:var(--ok)}
+.step{font-size:14px}
+.when{font-size:12px;color:var(--sub)}
+.pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--acc);margin-right:6px;animation:p 1.4s infinite}
+@keyframes p{50%{opacity:.25}}
+details{margin-top:8px}
+summary{font-size:13px;color:var(--sub);cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸ "}details[open] summary::before{content:"▾ "}
+ol.tl{list-style:none;margin:8px 0 0;padding:0 0 0 12px;border-left:2px solid var(--line)}
+ol.tl li{font-size:13px;margin:0 0 6px;position:relative}
+ol.tl li::before{content:"";position:absolute;left:-17px;top:7px;width:8px;height:8px;border-radius:50%;background:var(--line)}
+ol.tl li:last-child::before{background:var(--acc)}
+ol.tl time{color:var(--sub);margin-right:6px;font-variant-numeric:tabular-nums}
+.msg{font-size:13px;background:var(--ask2);border-radius:8px;padding:6px 10px;margin-top:6px;white-space:pre-wrap}
+.msg small{color:var(--sub)}
+.hist .qq{font-weight:600;font-size:14px}
+.hist .aa{font-size:14px;margin-top:4px;padding-left:10px;border-left:3px solid var(--ok);white-space:pre-wrap}
+.hist .jt{font-size:12px;color:var(--sub)}
+.empty{color:var(--sub);font-size:14px;text-align:center;padding:18px}
+.setup{max-width:560px;margin:40px auto}
+.setup input{width:100%;font:inherit;font-size:16px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+footer{margin-top:26px;font-size:12px;color:var(--sub);word-break:break-all}
+footer a{color:var(--sub)}
+.err{background:var(--bad2);color:var(--bad);border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:10px}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+"use strict";
+const NTFY = "https://ntfy.sh";
+let TOPIC = "";
+try {
+  const h = new URLSearchParams(location.hash.slice(1)).get("t");
+  if (h) { localStorage.setItem("cp-topic", h); }
+  TOPIC = h || localStorage.getItem("cp-topic") || "";
+} catch (e) { TOPIC = new URLSearchParams(location.hash.slice(1)).get("t") || ""; }
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ls = {get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+            set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let SNAP = ls.get("cp-snap", null);
+let SENT = ls.get("cp-sent", {});   // 送った回答/指示 {key:{a,t}}
+let ERR = "";
+let drafts = {};                    // 入力途中のテキスト（再描画で消えないように）
+let openJobs = new Set(ls.get("cp-open", []));
+
+function ago(t){
+  const s = Math.max(0, Date.now()/1000 - t);
+  if (s < 60) return "たった今";
+  if (s < 3600) return Math.floor(s/60) + "分前";
+  if (s < 86400) return Math.floor(s/3600) + "時間前";
+  return Math.floor(s/86400) + "日前";
+}
+function hm(t){ const d=new Date(t*1000); const p=n=>String(n).padStart(2,"0");
+  const today = new Date().toDateString()===d.toDateString();
+  return (today?"":(d.getMonth()+1)+"/"+d.getDate()+" ")+p(d.getHours())+":"+p(d.getMinutes()); }
+
+async function decode(msg){
+  if (!msg.startsWith("z:")) return JSON.parse(msg);
+  const bin = Uint8Array.from(atob(msg.slice(2)), c => c.charCodeAt(0));
+  const stream = new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(stream).text());
+}
+
+async function load(){
+  try {
+    const r = await fetch(`${NTFY}/${TOPIC}/json?poll=1&since=latest`, {cache:"no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const lines = (await r.text()).trim().split("\n").filter(Boolean).map(l => JSON.parse(l)).filter(m => m.event === "message");
+    if (lines.length) {
+      const s = await decode(lines[lines.length-1].message);
+      if (!SNAP || s.ts >= SNAP.ts) { SNAP = s; ls.set("cp-snap", s); }
+    }
+    ERR = "";
+  } catch (e) { ERR = "読み込みに失敗しました（" + e.message + "）。前回のデータを表示しています。"; }
+  render();
+}
+
+async function send(payload, key, text){
+  const r = await fetch(`${NTFY}/${TOPIC}-a`, {method:"POST", body: JSON.stringify(payload)});
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  SENT[key] = (SENT[key] || []).concat([{a:text, t:Math.floor(Date.now()/1000)}]);
+  ls.set("cp-sent", SENT);
+  delete drafts[key];
+}
+
+async function answer(qid, text, btn){
+  text = (text || "").trim();
+  if (!text) return;
+  if (btn) btn.disabled = true;
+  try { await send({q:qid, a:text}, "q:"+qid, text); }
+  catch(e){ alert("送信できませんでした: " + e.message); }
+  render();
+}
+async function instruct(jid, btn){
+  const text = (drafts["j:"+jid] || "").trim();
+  if (!text) return;
+  btn.disabled = true;
+  try { await send({job:jid, a:text}, "j:"+jid, text); }
+  catch(e){ alert("送信できませんでした: " + e.message); }
+  render();
+}
+
+function qCard(q){
+  const key = "q:"+q.id, sent = SENT[key];
+  let h = `<div class="card q"><div class="who">❓ 確認待ち${q.jt?"・"+esc(q.jt):""}<span class="when"> ・${hm(q.ts)}</span></div>
+    <div class="title">${esc(q.q)}</div>`;
+  if (q.body && q.body !== q.q) h += `<div class="body">${esc(q.body)}</div>`;
+  if (sent) {
+    h += `<div class="sent">✓ 送信済み：${esc(sent[sent.length-1].a)}\nPCが受け取ると「回答済み」に移ります。</div>
+      <details><summary>回答を送り直す</summary>`;
+  }
+  if (q.opts && q.opts.length) h += `<div class="opts">${q.opts.map((o,i)=>`<button data-opt="${esc(q.id)}" data-i="${i}">${esc(o)}</button>`).join("")}</div>`;
+  h += `<div class="row"><textarea rows="2" data-draft="${key}" placeholder="自由に回答・指示を書く">${esc(drafts[key]||"")}</textarea>
+    <button class="askbtn" data-ans="${esc(q.id)}">送信</button></div>`;
+  if (sent) h += `</details>`;
+  return h + `</div>`;
+}
+
+function jobCard(j){
+  const st = j.status, label = {run:"進行中", ask:"確認待ち", done:"完了", fail:"エラー"}[st] || st;
+  const pct = st === "done" ? 100 : (j.pct ?? null);
+  const key = "j:"+j.id;
+  const myMsgs = (SENT[key] || []).filter(m => !(j.inbox||[]).some(x => x.a === m.a));
+  let h = `<div class="card job ${st}"><div class="top"><span class="name">${esc(j.title)}</span>
+      <span class="chip s-${st}">${label}</span></div>`;
+  if (j.kind) h += `<div class="kind">${esc(j.kind)}</div>`;
+  if (pct !== null) h += `<div class="bar"><i style="width:${pct}%"></i></div>`;
+  else if (st === "run") h += `<div style="height:8px"></div>`;
+  h += `<div class="step">${st==="run"?'<span class="pulse"></span>':""}${esc(j.step)}${pct!==null&&st!=="done"?` <span class="when">(${pct}%)</span>`:""}</div>`;
+  if (j.note && (st==="done"||st==="fail")) h += `<div class="body" style="margin:6px 0 0;color:var(--sub)">${esc(j.note)}</div>`;
+  h += `<div class="when">更新 ${ago(j.updated)}・開始 ${hm(j.started)}</div>`;
+  h += `<details data-job="${esc(j.id)}" ${openJobs.has(j.id)?"open":""}><summary>経過${(st==="run"||st==="ask")?"・指示を送る":""}</summary><ol class="tl">`;
+  for (const [t, s] of (j.steps||[])) h += `<li><time>${hm(t)}</time>${esc(s)}</li>`;
+  h += `</ol>`;
+  for (const m of (j.inbox||[])) h += `<div class="msg">📩 ${esc(m.a)} <small>${hm(m.t)}・${m.read?"Claudeが確認済み":"PCが受信済み・未読"}</small></div>`;
+  for (const m of myMsgs) h += `<div class="msg">📩 ${esc(m.a)} <small>${hm(m.t)}・送信済み</small></div>`;
+  if (st === "run" || st === "ask") {
+    h += `<div class="row"><textarea rows="2" data-draft="${key}" placeholder="この作業への指示（次の進捗報告のときにClaudeへ届きます）">${esc(drafts[key]||"")}</textarea>
+      <button class="primary" data-ins="${esc(j.id)}">送る</button></div>`;
+  }
+  return h + `</details></div>`;
+}
+
+function render(){
+  const app = $("#app");
+  if (!TOPIC) {
+    app.innerHTML = `<div class="setup card"><h1 style="font-size:20px;margin:0 0 8px">Claude進捗</h1>
+      <p style="font-size:14px;color:var(--sub)">PCで <code>progress.py url</code> を実行して表示されるURLを開くか、トピック名を入力してください。</p>
+      <input id="tp" placeholder="cp-xxxxxxxx" autocapitalize="off" autocomplete="off">
+      <div style="margin-top:10px"><button class="primary" id="tpok">はじめる</button></div></div>`;
+    $("#tpok").onclick = () => { const v=$("#tp").value.trim(); if(v){ try{localStorage.setItem("cp-topic",v)}catch(e){} TOPIC=v; load(); } };
+    return;
+  }
+  // 入力中は描き直さない（キーボードが閉じるのを防ぐ）
+  const ae = document.activeElement;
+  if (ae && ae.tagName === "TEXTAREA" && ae.value) { pendingRender = true; return; }
+  pendingRender = false;
+
+  const s = SNAP || {jobs:[], qs:[], ts:0};
+  // PCが回答を受け取ったら送信済みの控えを消す
+  for (const q of s.qs) if (q.ans && SENT["q:"+q.id]) delete SENT["q:"+q.id];
+  for (const j of s.jobs) if (SENT["j:"+j.id]) SENT["j:"+j.id] = SENT["j:"+j.id].filter(m => !(j.inbox||[]).some(x=>x.a===m.a));
+  ls.set("cp-sent", SENT);
+
+  const openQ = s.qs.filter(q => !q.ans).sort((a,b)=>b.ts-a.ts);
+  const doneQ = s.qs.filter(q => q.ans).sort((a,b)=>(b.ans_ts||0)-(a.ans_ts||0));
+  const active = s.jobs.filter(j => j.status==="run"||j.status==="ask");
+  const finished = s.jobs.filter(j => !(j.status==="run"||j.status==="ask"));
+  const old = s.ts && (Date.now()/1000 - s.ts > 13*3600);
+
+  let h = `<header><h1>Claude進捗</h1><button id="rf" aria-label="更新">↻ 更新</button></header>
+    <p class="meta ${old?"stale":""}">${s.ts?"PCからの最終更新 "+hm(s.ts)+"（"+ago(s.ts)+"）":"まだデータがありません"}${old?"・PCがオフの可能性があります":""}</p>`;
+  if (ERR) h += `<div class="err">${esc(ERR)}</div>`;
+  if (openQ.length) h += `<h2>❓ 確認待ち（${openQ.length}）</h2>` + openQ.map(qCard).join("");
+  h += `<h2>進行中（${active.length}）</h2>` + (active.length ? active.map(jobCard).join("") : `<div class="card empty">いま進行中の作業はありません</div>`);
+  if (finished.length) h += `<h2>完了・停止</h2>` + finished.slice(0,15).map(jobCard).join("");
+  if (doneQ.length) h += `<h2>確認のやりとり（回答済み）</h2>` + doneQ.map(q => `<div class="card hist">
+      <div class="jt">${q.jt?esc(q.jt)+"・":""}${hm(q.ts)}</div><div class="qq">❓ ${esc(q.q)}</div>
+      <div class="aa">${esc(q.ans)}<div class="when">${{app:"スマホから",mail:"メールで",pc:"PCで"}[q.src]||""}回答・${hm(q.ans_ts)}</div></div></div>`).join("");
+  h += `<footer>20秒ごとに自動更新。確認や完了をプッシュ通知で受け取るには、ntfyアプリでトピック <code>${esc(TOPIC)}-n</code> を購読してください
+    （<a href="${NTFY}/${encodeURIComponent(TOPIC)}-n" target="_blank" rel="noopener">ブラウザで開く</a>）。</footer>`;
+  app.innerHTML = h;
+
+  $("#rf").onclick = load;
+  app.querySelectorAll("textarea[data-draft]").forEach(t => t.oninput = () => { drafts[t.dataset.draft] = t.value; });
+  app.querySelectorAll("button[data-opt]").forEach(b => b.onclick = () => {
+    const q = s.qs.find(x => x.id === b.dataset.opt); const o = q.opts[+b.dataset.i];
+    if (confirm(`「${o}」で回答しますか？`)) answer(q.id, o, b);
+  });
+  app.querySelectorAll("button[data-ans]").forEach(b => b.onclick = () => answer(b.dataset.ans, drafts["q:"+b.dataset.ans], b));
+  app.querySelectorAll("button[data-ins]").forEach(b => b.onclick = () => instruct(b.dataset.ins, b));
+  app.querySelectorAll("details[data-job]").forEach(d => d.ontoggle = () => {
+    d.open ? openJobs.add(d.dataset.job) : openJobs.delete(d.dataset.job); ls.set("cp-open", [...openJobs]);
+  });
+}
+let pendingRender = false;
+document.addEventListener("focusout", () => setTimeout(() => { if (pendingRender) render(); }, 200));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+setInterval(() => { if (!document.hidden) load(); }, 20000);
+setInterval(() => { if (!document.hidden && !pendingRender) render(); }, 60000);
+render();
+if (TOPIC) load();
+</script>
+</body>
+</html>
