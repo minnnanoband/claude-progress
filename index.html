@@ -47,7 +47,12 @@ textarea{width:100%;font:inherit;font-size:16px;border:1px solid var(--line);bor
 .s-run{background:var(--acc2);color:var(--acc)}.s-ask{background:var(--ask2);color:var(--ask)}
 .s-done{background:var(--ok2);color:var(--ok)}.s-fail{background:var(--bad2);color:var(--bad)}
 .kind{font-size:12px;color:var(--sub)}
-.bar{height:8px;border-radius:99px;background:var(--track);overflow:hidden;margin:10px 0 6px}
+.prog{display:flex;align-items:center;gap:10px;margin:10px 0 6px}
+.prog .bar{flex:1;margin:0}
+.pct{font-size:24px;font-weight:800;color:var(--acc);font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right;line-height:1}
+.pct small{font-size:14px;font-weight:700;margin-left:1px}
+.job.done .pct{color:var(--ok)}.job.fail .pct{color:var(--bad)}.pct.na{color:var(--sub)}
+.bar{height:10px;border-radius:99px;background:var(--track);overflow:hidden;margin:10px 0 6px}
 .bar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width .4s}
 .s-done .bar i,.job.done .bar i{background:var(--ok)}
 .step{font-size:14px}
@@ -62,6 +67,7 @@ ol.tl{list-style:none;margin:8px 0 0;padding:0 0 0 12px;border-left:2px solid va
 ol.tl li{font-size:13px;margin:0 0 6px;position:relative}
 ol.tl li::before{content:"";position:absolute;left:-17px;top:7px;width:8px;height:8px;border-radius:50%;background:var(--line)}
 ol.tl li:last-child::before{background:var(--acc)}
+ol.tl .tlp{color:var(--acc);font-size:12px;font-variant-numeric:tabular-nums}
 ol.tl time{color:var(--sub);margin-right:6px;font-variant-numeric:tabular-nums}
 .msg{font-size:13px;background:var(--ask2);border-radius:8px;padding:6px 10px;margin-top:6px;white-space:pre-wrap}
 .msg small{color:var(--sub)}
@@ -179,13 +185,13 @@ function jobCard(j){
   let h = `<div class="card job ${st}"><div class="top"><span class="name">${esc(j.title)}</span>
       <span class="chip s-${st}">${label}</span></div>`;
   if (j.kind) h += `<div class="kind">${esc(j.kind)}</div>`;
-  if (pct !== null) h += `<div class="bar"><i style="width:${pct}%"></i></div>`;
-  else if (st === "run") h += `<div style="height:8px"></div>`;
-  h += `<div class="step">${st==="run"?'<span class="pulse"></span>':""}${esc(j.step)}${pct!==null&&st!=="done"?` <span class="when">(${pct}%)</span>`:""}</div>`;
+  h += `<div class="prog"><div class="bar"><i style="width:${pct ?? 0}%"></i></div>`
+     + (pct !== null ? `<span class="pct">${pct}<small>%</small></span>` : `<span class="pct na">--<small>%</small></span>`) + `</div>`;
+  h += `<div class="step">${st==="run"?'<span class="pulse"></span>':""}${esc(j.step)}</div>`;
   if (j.note && (st==="done"||st==="fail")) h += `<div class="body" style="margin:6px 0 0;color:var(--sub)">${esc(j.note)}</div>`;
   h += `<div class="when">更新 ${ago(j.updated)}・開始 ${hm(j.started)}</div>`;
   h += `<details data-job="${esc(j.id)}" ${openJobs.has(j.id)?"open":""}><summary>経過${(st==="run"||st==="ask")?"・指示を送る":""}</summary><ol class="tl">`;
-  for (const [t, s] of (j.steps||[])) h += `<li><time>${hm(t)}</time>${esc(s)}</li>`;
+  for (const [t, s, sp] of (j.steps||[])) h += `<li><time>${hm(t)}</time>${esc(s)}${sp!=null?` <b class="tlp">${sp}%</b>`:""}</li>`;
   h += `</ol>`;
   for (const m of (j.inbox||[])) h += `<div class="msg">📩 ${esc(m.a)} <small>${hm(m.t)}・${m.read?"Claudeが確認済み":"PCが受信済み・未読"}</small></div>`;
   for (const m of myMsgs) h += `<div class="msg">📩 ${esc(m.a)} <small>${hm(m.t)}・送信済み</small></div>`;
