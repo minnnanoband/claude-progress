@@ -106,6 +106,19 @@ footer a{color:var(--sub)}
 <script>
 "use strict";
 const NTFY = "https://ntfy.sh";
+const VER = "2026-11-05c";   // 更新のたびに変える（古いページは自動で読み込み直す）
+let VCHK = 0;
+async function checkVersion(){
+  if (Date.now() - VCHK < 120000) return;
+  VCHK = Date.now();
+  try {
+    const t = await (await fetch(location.pathname + "?v=" + Date.now(), {cache:"no-store"})).text();
+    const m = t.match(/const VER = "([^"]+)"/);
+    if (m && m[1] !== VER && !(document.activeElement && document.activeElement.tagName === "TEXTAREA")) {
+      location.replace(location.pathname + "?v=" + m[1] + location.hash);
+    }
+  } catch(e) {}
+}
 let TOPIC = "";
 try {
   const h = new URLSearchParams(location.hash.slice(1)).get("t");
@@ -154,6 +167,7 @@ async function load(){
     }
     ERR = "";
     await loadUsage();
+    checkVersion();
   } catch (e) { ERR = "読み込みに失敗しました（" + e.message + "）。前回のデータを表示しています。"; }
   render();
 }
@@ -308,7 +322,7 @@ function render(){
       <div class="jt">${q.jt?esc(q.jt)+"・":""}${hm(q.ts)}</div><div class="qq">❓ ${esc(q.q)}</div>
       <div class="aa">${esc(q.ans)}<div class="when">${{app:"スマホから",mail:"メールで",pc:"PCで"}[q.src]||""}回答・${hm(q.ans_ts)}</div></div></div>`).join("");
   h += `<footer>20秒ごとに自動更新（使用量は1分ごと）。確認や完了をプッシュ通知で受け取るには、ntfyアプリでトピック <code>${esc(TOPIC)}-n</code> を購読してください
-    （<a href="${NTFY}/${encodeURIComponent(TOPIC)}-n" target="_blank" rel="noopener">ブラウザで開く</a>）。</footer>`;
+    （<a href="${NTFY}/${encodeURIComponent(TOPIC)}-n" target="_blank" rel="noopener">ブラウザで開く</a>）。<br>ページ版 ${VER}</footer>`;
   app.innerHTML = h;
 
   $("#rf").onclick = load;
