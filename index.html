@@ -63,6 +63,14 @@ details{margin-top:8px}
 summary{font-size:13px;color:var(--sub);cursor:pointer;list-style:none}
 summary::-webkit-details-marker{display:none}
 summary::before{content:"▸ "}details[open] summary::before{content:"▾ "}
+details[data-job]>summary{display:inline-flex;align-items:center;gap:2px;padding:7px 14px;border-radius:99px;
+  border:1px solid var(--acc);background:var(--acc2);color:var(--acc);font-weight:600;-webkit-user-select:none;user-select:none}
+details[data-job]>summary:active{transform:scale(.97)}
+details[data-job][open]>summary{background:var(--acc);color:#fff}
+.job.done details[data-job]>summary{border-color:var(--ok);background:var(--ok2);color:var(--ok)}
+.job.done details[data-job][open]>summary{background:var(--ok);color:#fff}
+.job.fail details[data-job]>summary{border-color:var(--bad);background:var(--bad2);color:var(--bad)}
+.job.fail details[data-job][open]>summary{background:var(--bad);color:#fff}
 ol.tl{list-style:none;margin:8px 0 0;padding:0 0 0 12px;border-left:2px solid var(--line)}
 ol.tl li{font-size:13px;margin:0 0 6px;position:relative}
 ol.tl li::before{content:"";position:absolute;left:-17px;top:7px;width:8px;height:8px;border-radius:50%;background:var(--line)}
