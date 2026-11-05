@@ -79,6 +79,17 @@ ol.tl time{color:var(--sub);margin-right:6px;font-variant-numeric:tabular-nums}
 .setup input{width:100%;font:inherit;font-size:16px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 footer{margin-top:26px;font-size:12px;color:var(--sub);word-break:break-all}
 footer a{color:var(--sub)}
+.use .lim{margin-bottom:12px}.use .lim:last-of-type{margin-bottom:6px}
+.use .lt{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;font-weight:600}
+.use .lp{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.use .lp small{font-size:13px}
+.use .bar{margin:5px 0 3px;height:9px}
+.use .rs{font-size:12px;color:var(--sub)}
+.use .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.use .stats b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+.use .stats span{font-size:11px;color:var(--sub)}
+.use .ft{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--sub);margin-top:8px}
+.use .ft a{color:var(--acc)}
 .err{background:var(--bad2);color:var(--bad);border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:10px}
 </style>
 </head>
@@ -103,6 +114,8 @@ let SENT = ls.get("cp-sent", {});   // 送った回答/指示 {key:{a,t}}
 let ERR = "";
 let drafts = {};                    // 入力途中のテキスト（再描画で消えないように）
 let openJobs = new Set(ls.get("cp-open", []));
+let USNAP = ls.get("cp-usnap", null);   // Claude使用量アプリのデータ
+let ULAST = 0;
 
 function ago(t){
   const s = Math.max(0, Date.now()/1000 - t);
@@ -132,8 +145,55 @@ async function load(){
       if (!SNAP || s.ts >= SNAP.ts) { SNAP = s; ls.set("cp-snap", s); }
     }
     ERR = "";
+    await loadUsage();
   } catch (e) { ERR = "読み込みに失敗しました（" + e.message + "）。前回のデータを表示しています。"; }
   render();
+}
+
+function utopic(){ return (SNAP && SNAP.u) || ls.get("cp-utopic", ""); }
+async function loadUsage(force){
+  const ut = utopic();
+  if (!ut || (!force && Date.now() - ULAST < 60000)) return;
+  ULAST = Date.now();
+  ls.set("cp-utopic", ut);
+  try {
+    const r = await fetch(`${NTFY}/${ut}/json?poll=1&since=12h`, {cache:"no-store"});
+    if (!r.ok) return;
+    for (const ln of (await r.text()).trim().split("\n").filter(Boolean)) {
+      try { const m = JSON.parse(ln); if (m.event !== "message") continue;
+        const u = JSON.parse(m.message); if (!USNAP || u.t >= USNAP.t) USNAP = u; } catch(e) {}
+    }
+    if (USNAP) ls.set("cp-usnap", USNAP);
+  } catch(e) {}
+}
+const fmtTok = n => n>=1e9?(n/1e9).toFixed(1)+"B":n>=1e6?(n/1e6).toFixed(n>=1e7?0:1)+"M":n>=1e3?(n/1e3).toFixed(n>=1e4?0:1)+"K":String(n);
+const ucol = p => p>=90?"var(--bad)":p>=70?"#d9902b":"var(--acc)";
+function untilReset(iso){
+  if (!iso) return "";
+  const d = new Date(iso), ms = d - Date.now();
+  if (ms <= 0) return "リセット済み";
+  const h = Math.floor(ms/36e5), m = Math.floor(ms%36e5/6e4);
+  const left = h>=24 ? `${Math.floor(h/24)}日${h%24}時間` : h ? `${h}時間${m}分` : `${m}分`;
+  return `あと${left}でリセット（${hm(d.getTime()/1000)}）`;
+}
+function usageCard(){
+  const u = USNAP; if (!u) return "";
+  const NAMES = {session:"5時間枠", weekly_all:"週間（全モデル）", weekly_opus:"週間（Opus）", weekly_sonnet:"週間（Sonnet）", weekly_fable:"週間（Fable）"};
+  let h = `<h2>📊 Claude使用量${u.plan?"（"+esc(String(u.plan).toUpperCase())+"）":""}</h2><div class="card use">`;
+  const lims = u.lim || [];
+  if (lims.length) for (const l of lims) {
+    const p = Math.max(0, Math.min(100, Math.round(l.p ?? 0)));
+    h += `<div class="lim"><div class="lt"><span>${NAMES[l.k] || esc(l.k)}</span><span class="lp" style="color:${ucol(p)}">${p}<small>%</small></span></div>
+      <div class="bar"><i style="width:${p}%;background:${ucol(p)}"></i></div><div class="rs">${untilReset(l.r)}</div></div>`;
+  } else if (u.err === "expired") h += `<div class="rs">PCのClaude Codeのログインが期限切れのため、利用枠の％を取得できませんでした（PCでClaude Codeを起動すると直ります）。</div>`;
+  if (u.ex) h += `<div class="rs">追加利用（今月）：${esc(u.ex.u)} / ${esc(u.ex.m)} ${esc(u.ex.c)}</div>`;
+  const d = u.tok && u.tok.days && u.tok.days[u.tok.days.length-1];
+  if (d) h += `<div class="stats"><div><b>${d[5]}</b><span>今日の応答数</span></div>
+      <div><b>${fmtTok(d[1]+d[2]+d[4])}</b><span>今日のトークン</span></div><div><b>${fmtTok(d[3])}</b><span>キャッシュ読込</span></div></div>`;
+  const old = Date.now()/1000 - u.t > 30*60;
+  h += `<div class="ft"><span style="${old?"color:var(--bad)":""}">PCで取得 ${hm(u.t)}（${ago(u.t)}）</span>
+    <a href="https://minnnanoband.github.io/claude-usage/#t=${encodeURIComponent(utopic())}" target="_blank" rel="noopener">詳しく見る ›</a></div></div>`;
+  return h;
 }
 
 async function send(payload, key, text){
@@ -234,11 +294,12 @@ function render(){
   if (ERR) h += `<div class="err">${esc(ERR)}</div>`;
   if (openQ.length) h += `<h2>❓ 確認待ち（${openQ.length}）</h2>` + openQ.map(qCard).join("");
   h += `<h2>進行中（${active.length}）</h2>` + (active.length ? active.map(jobCard).join("") : `<div class="card empty">いま進行中の作業はありません</div>`);
+  h += usageCard();
   if (finished.length) h += `<h2>完了・停止</h2>` + finished.slice(0,15).map(jobCard).join("");
   if (doneQ.length) h += `<h2>確認のやりとり（回答済み）</h2>` + doneQ.map(q => `<div class="card hist">
       <div class="jt">${q.jt?esc(q.jt)+"・":""}${hm(q.ts)}</div><div class="qq">❓ ${esc(q.q)}</div>
       <div class="aa">${esc(q.ans)}<div class="when">${{app:"スマホから",mail:"メールで",pc:"PCで"}[q.src]||""}回答・${hm(q.ans_ts)}</div></div></div>`).join("");
-  h += `<footer>20秒ごとに自動更新。確認や完了をプッシュ通知で受け取るには、ntfyアプリでトピック <code>${esc(TOPIC)}-n</code> を購読してください
+  h += `<footer>20秒ごとに自動更新（使用量は1分ごと）。確認や完了をプッシュ通知で受け取るには、ntfyアプリでトピック <code>${esc(TOPIC)}-n</code> を購読してください
     （<a href="${NTFY}/${encodeURIComponent(TOPIC)}-n" target="_blank" rel="noopener">ブラウザで開く</a>）。</footer>`;
   app.innerHTML = h;
 
