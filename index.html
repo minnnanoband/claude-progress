@@ -106,7 +106,7 @@ footer a{color:var(--sub)}
 <script>
 "use strict";
 const NTFY = "https://ntfy.sh";
-const VER = "2026-11-11a";   // 更新のたびに変える（古いページは自動で読み込み直す）
+const VER = "2026-11-11b";   // 更新のたびに変える（古いページは自動で読み込み直す）
 let VCHK = 0;
 async function checkVersion(){
   if (Date.now() - VCHK < 120000) return;
@@ -231,7 +231,7 @@ function memCard(){
   if (m.top && m.top.length) h += `<div class="rs" style="margin-top:6px">使用量の多いアプリ</div>` + m.top.map(t =>
       `<div class="lt" style="font-weight:500;font-size:13px;margin-top:3px"><span>${esc(t[0])}${t[2] > 1 ? `<small style="color:var(--sub)"> ×${t[2]}</small>` : ""}</span><span style="font-variant-numeric:tabular-nums">${t[1] >= 1 ? t[1].toFixed(1) + " GB" : Math.round(t[1] * 1024) + " MB"}</span></div>`).join("");
   const old = Date.now()/1000 - USNAP.t > 30*60;
-  h += `<div class="ft"><span style="${old?"color:var(--bad)":""}">PCで取得 ${hm(USNAP.t)}（${ago(USNAP.t)}）・10分ごとに更新</span></div></div>`;
+  h += `<div class="ft"><span style="${old?"color:var(--bad)":""}">PCで取得 ${hm(USNAP.t)}（${ago(USNAP.t)}）・5分ごとに更新</span></div></div>`;
   return h;
 }
 async function send(payload, key, text){
